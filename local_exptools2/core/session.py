@@ -13,7 +13,8 @@ from psychopy.event import waitKeys, Mouse
 from psychopy.monitors import Monitor
 from psychopy import logging
 from psychopy import prefs as psychopy_prefs
-from ..stimuli import create_circle_fixation
+from ..stimuli import create_circle_fixation, create_cross_fixation, create_occluder, create_screen_borders
+
 
 
 class Session:
@@ -75,6 +76,7 @@ class Session:
         self.nr_frames = 0  # keeps track of nr of nr of frame flips
         self.first_trial = True
         self.closed = False
+        # self.design_matrix = design_matrix
 
         # Initialize
         self.settings = self._load_settings()
@@ -89,8 +91,23 @@ class Session:
         self.default_fix = create_circle_fixation(
             self.win, radius=0.075, color=(1, 1, 1)
         )
+        self.cross_fix = create_cross_fixation(
+            self.win,
+            **self.settings["fixation"])
+        
+        self.occluder = create_occluder(
+            self.win,
+            **self.settings["occluder"])
+        self.screen_borders = create_screen_borders(
+            win=self.win,
+            dims=self.settings["display"]["win_dims"],
+            square_size=self.settings["display"]["square_size"],
+        )
+                
         self.mri_trigger = None  # is set below
         self.mri_simulator = self._setup_mri()
+
+    # def 
 
     def _load_settings(self):
         """Loads settings and sets preferences."""
@@ -197,7 +214,8 @@ class Session:
             n_triggers = 0
 
             if show_fix_during_dummies:
-                self.default_fix.draw()
+                # self.default_fix.draw()
+                self.cross_fix.draw()
                 self.win.flip()
 
             while n_triggers < wait_n_triggers:

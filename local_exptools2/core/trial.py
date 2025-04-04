@@ -7,13 +7,15 @@ from psychopy import logging
 # TODO:
 # - add port_log (like dict(phase=code)) to trial init
 
+# THIS IS THE ACTUAL TRIAL.PY THAT IS USED WHEN RUNNING SCRIPTS, BECAUSE IT'S FROM THE EXP
+# PACKAGE THAT IS INITIALISED IN THE CONDA (EXP) ENVIRONMENT. MAKE CHANGES HERE!
 
 class Trial:
     """ Base class for Trial objects. """
 
     def __init__(self, session, trial_nr, phase_durations, phase_names=None,
                  parameters=None, timing='seconds', load_next_during_phase=None,
-                 verbose=True, draw_each_frame=True):
+                 verbose=True, draw_each_frame=True, trial_params=None):
         """ Initializes Trial objects.
 
         parameters
@@ -59,6 +61,7 @@ class Trial:
         self.load_next_during_phase = load_next_during_phase
         self.verbose = verbose
         self.draw_each_frame = draw_each_frame
+        self.trial_params = trial_params
 
         self.start_trial = None
         self.exit_phase = False
@@ -137,7 +140,7 @@ class Trial:
         idx = self.session.global_log.shape[0]
         self.session.global_log.loc[idx, 'onset'] = onset
         self.session.global_log.loc[idx, 'trial_nr'] = self.trial_nr
-        self.session.global_log.loc[idx, 'event_type'] = self.phase_names[phase]
+        self.session.global_log.loc[idx, 'event_type'] = self.phase_names.iloc[phase] # BUGFIX: was self.phase_names[phase]
         self.session.global_log.loc[idx, 'phase'] = phase
         self.session.global_log.loc[idx, 'nr_frames'] = self.session.nr_frames
 
@@ -260,7 +263,8 @@ class Trial:
 
             if self.timing == 'seconds':
                 # Loop until timer is at 0!
-                self.session.timer.add(phase_dur)
+                # self.session.timer.add(phase_dur)
+                self.session.timer.addTime(-phase_dur)
                 while self.session.timer.getTime() < 0 and not self.exit_phase and not self.exit_trial:
                     self.draw()
                     if self.draw_each_frame:

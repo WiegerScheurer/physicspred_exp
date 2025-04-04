@@ -1,14 +1,16 @@
 import os.path as op
 from exptools2.core import Session
 from exptools2.core import Trial
-from psychopy.visual import TextStim
+# from psychopy.visual import TextStim
+from psychopy import visual
 from exptools2 import utils
+
 
 class TestTrial(Trial):
     """ Simple trial with text (trial x) and fixation. """
     def __init__(self, session, trial_nr, phase_durations, txt=None, **kwargs):
         super().__init__(session, trial_nr, phase_durations, **kwargs)
-        self.txt = TextStim(self.session.win, txt) 
+        self.txt = visual.TextStim(self.session.win, txt) 
 
     def draw(self):
         """ Draws stimuli """
@@ -46,12 +48,13 @@ class TestSession(Session):
 
         self.close()
 
-
 if __name__ == '__main__':
 
     settings = op.join(op.dirname(__file__), 'settings.yml')
-    session = TestSession('sub-01', n_trials=100, settings_file=settings)
+    session = TestSession('sub-02', n_trials=20, settings_file=settings)
     session.create_trials(durations=(.25, .25), timing='seconds')
     #session.create_trials(durations=(3, 3), timing='frames')
     session.run()
     session.quit()
+    
+    
