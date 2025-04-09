@@ -1,11 +1,34 @@
 import os
 # import OmegaConf
 from psychopy.visual import Circle, ShapeStim, Rect, ImageStim
-from .utils import get_bounce_dist
+from utils import get_bounce_dist
 
 # # Load configuration from YAML file
 # config_path = os.path.join(os.path.dirname(__file__), os.pardir, "config_lumin.yaml")
 # config = OmegaConf.load(config_path)
+
+def create_ball(win, ball_radius=0.1, **kwargs):
+    """ Creates a ball with sensible defaults. """
+    # config = components["config"]
+    # ball_radius = config["ball"]["radius"]
+    
+    # Create the ball
+    return Circle(win, 
+            radius=ball_radius, 
+            edges=64,
+            fillColor="white",#config["ball_fillcolor"], 
+            lineColor="white", #config["ball_linecolor"], 
+            interpolate=True,
+            opacity=1)
+
+# ball = Circle(win, 
+#             radius=ball_radius, 
+#             edges=64,
+#             fillColor="white",#config["ball_fillcolor"], 
+#             lineColor="white", #config["ball_linecolor"], 
+#             interpolate=True,
+#             opacity=1)
+
 
 def create_circle_fixation(win, radius=0.1, color=(1, 1, 1),
                            edges=100, **kwargs):
@@ -57,60 +80,69 @@ def create_interactor(win, trial, ball_radius, height, width, path_45, path_135,
     bounce_dist = get_bounce_dist(ball_radius + (width / 2 * 1.8)) # 1.8 factor is due to the that now we use an image
 
             
-    line_45_bottom = ImageStim(
-        win,
-        # image="/Users/wiegerscheurer/Stimulus_material/45_flat_beige.png", 
-        image=path_45,
-        size=(height, height),
-        pos=(bounce_dist, -(bounce_dist)),
-        opacity=1,
-        interpolate=True,
-    )
+    # line_45_bottom = ImageStim(
+    #     win,
+    #     # image="/Users/wiegerscheurer/Stimulus_material/45_flat_beige.png", 
+    #     image=path_45,
+    #     size=(height, height),
+    #     pos=(bounce_dist, -(bounce_dist)),
+    #     opacity=1,
+    #     interpolate=True,
+    # )
 
-    line_45_top = ImageStim(
-        win,
-        # image="/Users/wiegerscheurer/Stimulus_material/45_flat_white.png", 
-        image=path_45,
-        size=(height, height),
-        pos= (-(bounce_dist), bounce_dist),
-        opacity=1,
-        interpolate=True,
-    )
+    # line_45_top = ImageStim(
+    #     win,
+    #     # image="/Users/wiegerscheurer/Stimulus_material/45_flat_white.png", 
+    #     image=path_45,
+    #     size=(height, height),
+    #     pos= (-(bounce_dist), bounce_dist),
+    #     opacity=1,
+    #     interpolate=True,
+    # )
 
-    line_135_bottom = ImageStim(
-        win,
-        # image="/Users/wiegerscheurer/Stimulus_material/135_flat_white.png", 
-        image=path_135,
-        size=(height, height),
-        pos=(-bounce_dist, -(bounce_dist)),
-        opacity=1,
-        interpolate=True,
-    )
+    # line_135_bottom = ImageStim(
+    #     win,
+    #     # image="/Users/wiegerscheurer/Stimulus_material/135_flat_white.png", 
+    #     image=path_135,
+    #     size=(height, height),
+    #     pos=(-bounce_dist, -(bounce_dist)),
+    #     opacity=1,
+    #     interpolate=True,
+    # )
 
-    line_135_top = ImageStim(
-        win,
-        # image="/Users/wiegerscheurer/Stimulus_material/135_flat_white.png", 
-        image=path_135,
-        size=(height, height),
-        pos= ((bounce_dist), bounce_dist),
-        opacity=1,
-        interpolate=True,
-    )
+    # line_135_top = ImageStim(
+    #     win,
+    #     # image="/Users/wiegerscheurer/Stimulus_material/135_flat_white.png", 
+    #     image=path_135,
+    #     size=(height, height),
+    #     pos= ((bounce_dist), bounce_dist),
+    #     opacity=1,
+    #     interpolate=True,
+    # )
+    line_45_bottom = Rect(win, width=100, height=500, fillColor="red", lineColor="green", 
+                pos=(0, 0), opacity=1, interpolate=True, **kwargs)
+    line_45_top = line_45_bottom
+    line_135_bottom = line_45_bottom
+    line_135_top = line_45_bottom
     
     # Draw interactor line if applicable
     if trial:
         if trial[:-2] == "45_top":
+            print("draw 45 top")
             # line_135_top.draw()
-            return line_135_top
-        elif trial[:-2] == "45_bottom":
-            # line_135_bottom.draw()
-            return line_135_bottom
-        elif trial[:-2] == "135_top":
-            # line_45_top.draw()
             return line_45_top
-        elif trial[:-2] == "135_bottom":
-            # line_45_bottom.draw()
+        elif trial[:-2] == "45_bottom":
+            print("draw 45 bottom")
+            # line_135_bottom.draw()
             return line_45_bottom
+        elif trial[:-2] == "135_top":
+            print("draw 135 top")
+            # line_45_top.draw()
+            return line_135_top
+        elif trial[:-2] == "135_bottom":
+            print("draw 135 bottom")
+            # line_45_bottom.draw()
+            return line_135_bottom
     
 # Helper function to draw screen borders and other elements
 def create_screen_borders(win, dims, square_size, **kwargs):    # Create the grey borders
@@ -160,3 +192,87 @@ def create_screen_borders(win, dims, square_size, **kwargs):    # Create the gre
         
     # fixation.draw()
     # draw_fixation()
+    
+    
+# Helper function to draw screen borders and other elements
+def draw_screen_elements(trial, draw_occluder=False, exp_window=None, config=None,):
+#                          left_border=None, right_border=None, top_border=None, bottom_border=None,
+#                          line_45_top=None, line_45_bottom=None, line_135_top=None, line_135_bottom=None,
+#                          occluder=None, fixation=None):
+    
+    fixation = create_cross_fixation(exp_window, **config["fixation"])
+    occluder = create_occluder(exp_window, **config["occluder"])
+    left_border, right_border, top_border, bottom_border = create_screen_borders(exp_window,
+                                                                                         config["display"]["win_dims"],
+                                                                                         config["display"]["square_size"])
+
+
+    # line_map = {
+    #     "45_top": create_interactor(win=exp_window, trial="45_top", ball_radius=config["ball"]["radius"], **config["interactor"]),
+    #     "45_bottom":  create_interactor(win=exp_window, trial="45_bottom", ball_radius=config["ball"]["radius"], **config["interactor"]),
+    #     "135_top":  create_interactor(win=exp_window, trial="135_top", ball_radius=config["ball"]["radius"], **config["interactor"]),
+    #     "135_bottom":  create_interactor(win=exp_window, trial="135_bottom", ball_radius=config["ball"]["radius"], **config["interactor"]),
+    #     }
+    
+    # Draw the fixation cross by drawing both lines
+    def _draw_fixation():
+        fixation[0].draw()
+        fixation[1].draw()
+    
+    left_border.draw()
+    right_border.draw()
+    top_border.draw()
+    bottom_border.draw()
+    
+    if trial:
+        height = config["interactor"]["height"]
+        width = config["interactor"]["width"]
+        bounce_dist = get_bounce_dist(config["ball"]["radius"] + (width / 2 * 1.8)) # 1.8 factor is due to the that now we use an image, not sure if args are ok
+
+        
+        
+    # Draw interactor line if applicable
+    if trial:
+        if trial[:-2] == "45_top":
+            ImageStim(
+                win=exp_window,
+                # image="/Users/wiegerscheurer/Stimulus_material/135_flat_white.png", 
+                image=config["interactor"]["path_45"],
+                size=(height, height),
+                pos= (-(bounce_dist), bounce_dist),
+                opacity=1,
+                interpolate=True).draw()
+        elif trial[:-2] == "45_bottom":
+            ImageStim(
+                win=exp_window,
+                # image="/Users/wiegerscheurer/Stimulus_material/135_flat_white.png", 
+                image=config["interactor"]["path_45"],
+                size=(height, height),
+                pos=(bounce_dist, -(bounce_dist)),
+                opacity=1,
+                interpolate=True).draw()
+        elif trial[:-2] == "135_top":
+            ImageStim(
+                win=exp_window,
+                # image="/Users/wiegerscheurer/Stimulus_material/135_flat_white.png", 
+                image=config["interactor"]["path_135"],
+                size=(height, height),
+                pos= ((bounce_dist), bounce_dist),
+                opacity=1,
+                interpolate=True).draw()
+        elif trial[:-2] == "135_bottom":
+            ImageStim(
+                win=exp_window,
+                # image="/Users/wiegerscheurer/Stimulus_material/135_flat_white.png", 
+                image=config["interactor"]["path_135"],
+                size=(height, height),
+                pos=(-bounce_dist, -(bounce_dist)),
+                opacity=1,
+                interpolate=True).draw()
+    
+    # Draw occluder if needed
+    if draw_occluder:
+        occluder.draw()
+        
+    # fixation.draw()
+    _draw_fixation()

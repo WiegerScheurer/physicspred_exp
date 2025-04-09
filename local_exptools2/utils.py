@@ -1,11 +1,17 @@
 import pickle
 import random
 import colour
+import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from datetime import datetime
 from itertools import product
 from scipy.stats import truncexpon
+from datetime import datetime
+
+import yaml
+from types import SimpleNamespace
 
 def save_experiment(session, output_str, engine='pickle'):
     """ Saves Session object.
@@ -413,3 +419,255 @@ def build_design_matrix(n_trials:int, change_ratio:list=[True, False],
     # Shuffle the rows and reset the index
     design_matrix = design_matrix.sample(frac=1).reset_index(drop=True)
     return design_matrix
+
+def truncated_exponential_decay(min_iti, truncation_cutoff, size=1000):
+    """
+    Generate a truncated exponential decay distribution.
+
+    Parameters:
+        min_iti (float): The minimum ITI (lower bound of the distribution).
+        truncation_cutoff (float): The upper bound of the distribution.
+        size (int): Number of samples to generate.
+
+    Returns:
+        samples (numpy.ndarray): Random samples from the truncated exponential distribution.
+    """
+    # Define the scale parameter for the exponential decay
+    scale = 1.0  # Adjust this to control the steepness of decay
+    b = (truncation_cutoff - min_iti) / scale  # Shape parameter for truncation
+
+    # Generate random samples
+    samples = truncexpon(b=b, loc=min_iti, scale=scale).rvs(size=size)
+    return samples
+
+def setup_folders(subject_id, task_name, base_dir="/Users/wiegerscheurer/repos/physicspred/database"):
+    """
+    Creates the necessary folders for a given subject and task.
+
+    Args:
+        subject_id (str): The ID of the subject.
+        task_name (str): The name of the task.
+
+    Returns:
+        str: The path to the task directory.
+    """
+
+    # Create base directory if it doesn't exist
+    if not os.path.exists(base_dir):
+        os.makedirs(base_dir)
+
+    subject_dir = os.path.join(base_dir, subject_id)
+    task_dir = os.path.join(subject_dir, task_name)
+
+    # Create directories if they don't exist
+    os.makedirs(task_dir, exist_ok=True)
+
+    return task_dir
+
+
+def save_performance_data(subject_id, task_name, data, design_matrix:bool=False, intermediate:bool=False, base_dir="/Users/wiegerscheurer/repos/physicspred/database"):
+    """
+    Save performance data to a CSV file.
+
+    Args:
+        subject_id (str): The ID of the subject.
+        task_name (str): The name of the task.
+        data (pandas.DataFrame): The performance data to be saved.
+
+    Returns:
+        None
+    """
+    task_dir = setup_folders(subject_id, task_name, base_dir=base_dir)
+    date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    filename = f"{date_str}.csv" if not design_matrix else "design_matrix.csv"
+    filename = f"intermediate.csv" if intermediate else filename
+    filepath = os.path.join(task_dir, filename)
+
+    # Save the DataFrame to a CSV file
+    data.to_csv(filepath, index=False, float_format="%.8f")
+
+
+def get_pos_and_dirs(ball_speed, square_size, ball_spawn_spread, ball_speed_change, ball_radius):
+    # Possible starting positions
+    # start_positions = {
+    #     "up": (0, square_size // ball_spawn_spread),
+    #     "down": (0, -square_size // ball_spawn_spread),
+    #     "left": (-square_size // ball_spawn_spread, 0),
+    #     "right": (square_size // ball_spawn_spread, 0),
+    # }
+    out_of_bounds = (square_size // 2) + (ball_radius)
+    
+    start_positions = {
+        "up": (0, out_of_bounds),
+        "down": (0, -out_of_bounds),
+        "left": (-out_of_bounds, 0),
+        "right": (out_of_bounds, 0),
+    }
+
+    # Base directions
+    directions = {
+        "up": (0, -ball_speed),
+        "down": (0, ball_speed),
+        "left": (ball_speed, 0),
+        "right": (-ball_speed, 0),
+    }
+    # Fast directions
+    fast_ball_speed = ball_speed * ball_speed_change
+    fast_directions = {
+        "up": (0, -fast_ball_speed),
+        "down": (0, fast_ball_speed),
+        "left": (fast_ball_speed, 0),
+        "right": (-fast_ball_speed, 0),
+    }
+
+    # Slow directions
+    slow_ball_speed = ball_speed / ball_speed_change
+    slow_directions = {
+        "up": (0, -slow_ball_speed),
+        "down": (0, slow_ball_speed),
+        "left": (slow_ball_speed, 0),
+        "right": (-slow_ball_speed, 0),
+    }
+    
+    # Skip directions
+    skip_ball_speed = ball_speed * (ball_speed_change * 10)
+    skip_directions = {
+        "up": (0, -skip_ball_speed),
+        "down": (0, skip_ball_speed),
+        "left": (skip_ball_speed, 0),
+        "right": (-skip_ball_speed, 0),
+    }
+    
+    # Wait directions
+    wait_ball_speed = ball_speed * (ball_speed_change / 10)
+    wait_directions = {
+        "up": (0, -wait_ball_speed),
+        "down": (0, wait_ball_speed),
+        "left": (wait_ball_speed, 0),
+        "right": (-wait_ball_speed, 0),
+    }
+    
+
+    return start_positions, directions, fast_directions, slow_directions, skip_directions, wait_directions
+
+def determine_sequence(n_trials: int, options: list, randomised: bool = True) -> list:
+    """
+    Balances a sequence of trials based on the number of trials and options.
+
+    Parameters:
+    n_trials (int): The number of trials to balance.
+    options (list): The options to balance.
+    randomised (bool): Whether to randomise the sequence.
+
+    Returns:
+    list: The balanced sequence of trials.
+
+    """
+
+    n_options = len(options)
+    n_per_option = n_trials // n_options
+    remainder = n_trials % n_options
+
+    balanced_sequence = options * n_per_option + options[:remainder]
+
+    if randomised:
+        random.shuffle(balanced_sequence)
+
+    return balanced_sequence
+
+
+def balance_over_bool(boolean_list:list, value_options:list, randomised:bool=True) -> list:
+    """Map one list of value options onto the True values of a boolean list.
+
+    Args:
+        boolean_list (list): List that indicates which trials should get a value.
+        value_options (list): List of the value options
+    """    
+    
+    val_seq = determine_sequence(np.sum(boolean_list), value_options, randomised=randomised)
+    
+    result = []
+    value_index = 0
+    for item in boolean_list:
+        if item:
+            result.append(val_seq[value_index])
+            value_index += 1
+        else:
+            result.append(False)
+    return result
+
+def get_phantbounce_sequence(trials:list, rand_bounce_direction_options:list):
+    # Make empty nan array of same size as none_l bool
+    trial_array = np.empty(len(trials), dtype=object)
+
+    for dir_idx, none_dir in enumerate(["l", "r", "u", "d"]):
+        none_dir_bool = [trial == f"none_{none_dir}" for trial in trials]
+        trial_array[none_dir_bool] = rand_bounce_direction_options[dir_idx]
+
+    return trial_array
+
+
+def check_balance(df):
+    print(f"Total trials: {len(df)}")
+    
+    # Check trial type balance
+    type_counts = df['trial_type'].value_counts()
+    print("\nTrial type balance:")
+    print(type_counts)
+    
+    # Check trial option balance within each trial type
+    print("\nTrial option balance for interactor trials:")
+    interactor_options = df[df['trial_type'] == 'interactor']['trial_option'].value_counts().sort_index()
+    print(interactor_options)
+    print(f"Variance: {interactor_options.var():.2f}")
+    
+    print("\nTrial option balance for empty trials:")
+    empty_options = df[df['trial_type'] == 'empty']['trial_option'].value_counts().sort_index()
+    print(empty_options)
+    print(f"Variance: {empty_options.var():.2f}")
+    
+    # Check bounce balance
+    bounce_counts = df['bounce'].value_counts()
+    print("\nBounce balance:")
+    print(bounce_counts)
+    
+    # Check ball change balance
+    ball_change_counts = df['ball_change'].value_counts()
+    print("\nBall change balance:")
+    print(ball_change_counts)
+    
+    # Check ball luminance balance
+    print("\nBall luminance balance:")
+    print(df['ball_luminance'].value_counts().sort_index())
+    
+    print("\nCross-tabulation of bounce × ball_luminance_change:")
+    print(pd.crosstab(df['bounce'], df['ball_luminance']))
+    
+    # Cross-tabulations for more detailed balance checks
+    print("\nCross-tabulation of trial_type × bounce:")
+    print(pd.crosstab(df['trial_type'], df['bounce']))
+    
+    print("\nCross-tabulation of trial_type × ball_change:")
+    print(pd.crosstab(df['trial_type'], df['ball_change']))
+    
+    print("\nCross-tabulation of bounce × ball_change:")
+    print(pd.crosstab(df['bounce'], df['ball_change']))
+    
+    # Check balance at the deepest level
+    print("\nBalance within interactor trial types:")
+    for option in sorted(df[df['trial_type'] == 'interactor']['trial_option'].unique()):
+        subset = df[(df['trial_type'] == 'interactor') & (df['trial_option'] == option)]
+        print(f"\n{option}:")
+        print(f"  Total: {len(subset)}")
+        print(f"  Bounce: {subset['bounce'].value_counts().to_dict()}")
+        print(f"  Ball Change: {subset['ball_change'].value_counts().to_dict()}")
+        print(f"  Ball luminance: {subset['ball_luminance'].value_counts().to_dict()}")
+    
+    print("\nBalance within empty trial types:")
+    for option in sorted(df[df['trial_type'] == 'empty']['trial_option'].unique()):
+        subset = df[(df['trial_type'] == 'empty') & (df['trial_option'] == option)]
+        print(f"\n{option}:")
+        print(f"  Total: {len(subset)}")
+        print(f"  Bounce: {subset['bounce'].value_counts().to_dict()}")
+        print(f"  Ball Change: {subset['ball_change'].value_counts().to_dict()}")
+        print(f"  Ball luminance: {subset['ball_luminance'].value_counts().to_dict()}")

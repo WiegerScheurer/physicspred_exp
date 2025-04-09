@@ -139,7 +139,7 @@ experiment:
   n_trials: 20
   feedback_freq: 5          # Trials between feedback moments
   target_baserate: 0.5      # Frequency of target trials (1:1 ratio)
-  verbose: false
+  verbose: true
   exp_parameters:          # Parameters to record per trial
     - trial_type
     - trial

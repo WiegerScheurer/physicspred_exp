@@ -141,6 +141,7 @@ class Trial:
         self.session.global_log.loc[idx, 'onset'] = onset
         self.session.global_log.loc[idx, 'trial_nr'] = self.trial_nr
         self.session.global_log.loc[idx, 'event_type'] = self.phase_names.iloc[phase] # BUGFIX: was self.phase_names[phase]
+        # self.session.global_log.loc[idx, 'event_type'] = self.phase_names[phase]
         self.session.global_log.loc[idx, 'phase'] = phase
         self.session.global_log.loc[idx, 'nr_frames'] = self.session.nr_frames
 

@@ -16,6 +16,8 @@ import os
 
 
 
+# from local_exptools2.stimuli import create_circle_fixation, create_cross_fixation, create_occluder, create_interactor     
+
 class BehavTrial(Trial):
     """ Simple trial with text (trial x) and fixation. """
     def __init__(self, session, trial_nr, phase_durations, txt=None, trial_params=None, **kwargs):
@@ -88,8 +90,12 @@ if __name__ == '__main__': # This is so that it doesn't run when imported as a m
 
     # settings = op.join(op.dirname(__file__), 'behav_settings.yml')
     settings = op.join(op.abspath(op.join(op.dirname(__file__), '..')), 'behav_settings.yml')
-    session = BehavSession('sub-03', n_trials=20, output_dir=op.join(os.getcwd(), "logs/wip"),settings_file=settings)
-    session.create_trials(durations=(.25, .25), timing='seconds')
+    session = BehavSession('sub-03', 
+                           n_trials=20, 
+                           output_dir=op.join(os.getcwd(), "logs/wip"),
+                           settings_file=settings)
+    session.create_trials(durations=(5, 4, 3, 2, 1), # These durations are for the different sequential phases (so iti, fix, int, occ, ballmov)
+                          timing='seconds')
     #session.create_trials(durations=(3, 3), timing='frames')
     session.run()
     session.quit()
